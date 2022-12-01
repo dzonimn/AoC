@@ -1,2 +1,8 @@
 [deps]
+BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+Chain = "8be319e6-bccf-4806-a6f7-6fae938471bc"
+DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
 HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
+MacroTools = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
+Memoization = "6fafb56a-5788-4b4e-91ca-c0cea6611c73"
+NamedTupleTools = "d9ec5142-1e00-5aa0-9d6a-321866360f50"
