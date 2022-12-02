@@ -4,9 +4,11 @@ end
 
 test()
 
+##
 
 function main()
-    read("data/", String)
+    data = read("data/", String)
+    data = split(data, "\n")
 end
 
 main()
