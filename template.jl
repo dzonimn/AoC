@@ -1,9 +1,19 @@
 using Test
 
+function f()
+
+end
+
 function test()
     input = """
+
 """
     input = split(input, "\n")
+
+    # @show f(input)
+    # for i in input
+    #     @show f(i)
+    # end
 end
 
 test()
