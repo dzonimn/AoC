@@ -1,14 +1,27 @@
-function test()
+using Test
 
+function test()
+    input = """
+"""
+    input = split(input, "\n")
 end
 
 test()
 
 ##
 
-function main()
+function part1()
     data = read("data/", String)
     data = split(data, "\n")
 end
 
-main()
+part1()
+
+##
+
+function part2()
+    data = read("data/", String)
+    data = split(data, "\n")
+end
+
+part2()
