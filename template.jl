@@ -5,12 +5,11 @@ function f()
 end
 
 function test()
-    input = """
-
+    input = raw"""
 """
     input = split(input, "\n")
 
-    # @show f(input)
+    @show f(input)
     # for i in input
     #     @show f(i)
     # end
