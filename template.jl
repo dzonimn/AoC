@@ -20,8 +20,8 @@ test()
 ##
 
 function part1()
-    data = read("data/", String)
-    data = split(data, "\n")
+    input = read("data/", String)
+    input = split(input, "\n")
 end
 
 part1()
@@ -29,8 +29,8 @@ part1()
 ##
 
 function part2()
-    data = read("data/", String)
-    data = split(data, "\n")
+    input = read("data/", String)
+    input = split(input, "\n")
 end
 
 part2()

@@ -1,13 +1,18 @@
 using Dates
 
 todaydate = day(today())
-if todaydate < 10
-    todaydatefile = "0" * string(todaydate)
-else
-    todaydatefile = string(todaydate)
+
+print("Enter the file number [$todaydate]: ")
+filename = readline()
+
+@assert all(isdigit, filename) "Must be integer"
+
+if length(filename) == 1
+    filenamewithzero = "0" * string(filename)
 end
 
 filecontents = read("./template.jl", String)
-filecontents = replace(filecontents, "data/" => "data/$todaydate.txt")
+filecontents = replace(filecontents, "data/" => "data/$filenamewithzero.txt")
 
-write("$todaydatefile.jl", filecontents)
+write("$filename.jl", filecontents)
+touch("data/$filename.txt")
