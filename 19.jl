@@ -18,10 +18,11 @@ struct GeodeRobot <: Robot
 end
 
 mutable struct Bank{T<:Int64}
-    ore::T
-    clay::T
-    obsidian::T
-    geode::T
+    # ore::T
+    # clay::T
+    # obsidian::T
+    # geode::T
+    amount::Matrix{T}
 end
 end
 Resource = Types.Resource
@@ -45,21 +46,48 @@ function f(blueprint)
     return (ore=orerobot, clay=clayrobot, obsidian=obsidianrobot, geode=geoderobot)
 end
 
-collect!(bank, ::OreRobot) = (bank.ore += 1)
-collect!(bank, ::ClayRobot) = (bank.clay += 1)
-collect!(bank, ::ObsidianRobot) = (bank.obsidian += 1)
-collect!(bank, ::GeodeRobot) = (bank.geode += 1)
+mine!(bank, ::OreRobot) = (bank.amount += [1 0 0 0])
+mine!(bank, ::ClayRobot) = (bank.amount += [0 1 0 0])
+mine!(bank, ::ObsidianRobot) = (bank.amount += [0 0 1 0])
+mine!(bank, ::GeodeRobot) = (bank.amount += [0 0 0 1])
+canbuy(bank, robot::Robot) = all(robot.cost .<= bank.amount)
 function step!(bank, robots, robotcosts)
-    # spend resources
+    # spend resource
+    robotstobuy = []
+    while any((
+        canbuy(bank, robotcosts.ore),
+        canbuy(bank, robotcosts.clay),
+        canbuy(bank, robotcosts.obsidian),
+        canbuy(bank, robotcosts.geode),
+    ))
+        if canbuy(bank, robotcosts.geode)
+            @info "Buy a geode robot"
+            bank.amount -= robotcosts.geode.cost
+            push!(robotstobuy, robotcosts.geode)
+        elseif canbuy(bank, robotcosts.obsidian)
+            @info "Buy a obsidian robot"
+            bank.amount -= robotcosts.obsidian.cost
+            push!(robotstobuy, robotcosts.obsidian)
+        elseif canbuy(bank, robotcosts.clay)
+            @info "Buy a clay robot"
+            bank.amount -= robotcosts.clay.cost
+            push!(robotstobuy, robotcosts.clay)
+        elseif canbuy(bank, robotcosts.ore)
+            @info "Buy a ore robot"
+            bank.amount -= robotcosts.ore.cost
+            push!(robotstobuy, robotcosts.ore)
+        end
+        @info "$bank"
+    end
 
     # collect resources
     for robot in robots
-        collect!(bank, robot)
-        @info "You now have $bank"
+        mine!(bank, robot)
     end
+    @info "You now have $(bank.amount)"
 
-    # finish building robot
-
+    # add robots to inventory
+    push!(robots, robotstobuy...)
 end
 
 function test()
@@ -71,8 +99,8 @@ Blueprint 2: Each ore robot costs 2 ore. Each clay robot costs 3 ore. Each obsid
     # @show f(input)
     for i in input
         robotcosts = f(i)
-        robots = [robotcosts.ore]
-        bank = Bank(0, 0, 0, 0)
+        robots = Robot[robotcosts.ore]
+        bank = Bank([0 0 0 0])
         for min in 1:24
             @info "Minute $min"
             step!(bank, robots, robotcosts)
