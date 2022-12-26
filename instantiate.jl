@@ -5,16 +5,17 @@ todaydate = day(today())
 print("Enter the file number [$todaydate]: ")
 filename = readline()
 
+filename == "" && (filename = string(todaydate))
 @assert all(isdigit, filename) "Must be integer"
 
 if length(filename) == 1
-    filenamewithzero = "0" * string(filename)
-    filecontents = read("./template.jl", String)
-    filecontents = replace(filecontents, "data/" => "data/$filenamewithzero.txt")
+    jlfilename = "0" * string(filename)
 else
-    filecontents = read("./template.jl", String)
-    filecontents = replace(filecontents, "data/" => "data/$filename.txt")
+    jlfilename = filename
 end
 
+filecontents = read("./template.jl", String)
+filecontents = replace(filecontents, "data/" => "data/$filename.txt")
+
 write("$filename.jl", filecontents)
-touch("data/$filename.txt")
+touch("data/$jlfilename.txt")
