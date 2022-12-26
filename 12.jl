@@ -102,10 +102,10 @@ function RLBase.legal_action_space_mask(env::MazeEnv)
     left_height = env.map[posrow, max(1, poscol-1)]
     right_height = env.map[posrow, min(cols, poscol+1)]
     # cases where the adjacent is shorter
-    # up_height - current_height < 0 && (legal_actions[1] = 0)
-    # down_height - current_height < 0 && (legal_actions[2] = 0)
-    # left_height - current_height < 0 && (legal_actions[3] = 0)
-    # right_height - current_height < 0 && (legal_actions[4] = 0)
+    up_height - current_height < -1 && (legal_actions[1] = 0)
+    down_height - current_height < -1 && (legal_actions[2] = 0)
+    left_height - current_height < -1 && (legal_actions[3] = 0)
+    right_height - current_height < -1 && (legal_actions[4] = 0)
     # cases where the adjacent is taller by more than 1
     up_height - current_height > 1 && (legal_actions[1] = 0)
     down_height - current_height > 1 && (legal_actions[2] = 0)
@@ -154,60 +154,9 @@ RLBase.DynamicStyle(::MazeEnv) = SEQUENTIAL
 RLBase.ActionStyle(::MazeEnv) = FULL_ACTION_SET
 RLBase.InformationStyle(::MazeEnv) = PERFECT_INFORMATION
 RLBase.StateStyle(::MazeEnv) = Observation{Int}()
-RLBase.RewardStyle(::MazeEnv) = TERMINAL_REWARD
+RLBase.RewardStyle(::MazeEnv) = STEP_REWARD
 RLBase.UtilityStyle(::MazeEnv) = GENERAL_SUM
 RLBase.ChanceStyle(::MazeEnv) = DETERMINISTIC
-
-##
-
-function RL.Experiment(
-    ::Val{:JuliaRL},
-    ::Val{:BasicDQN},
-    env,
-    ::Nothing;
-    seed=123
-)
-    # rng = StableRNG(seed)
-    rng = MersenneTwister(seed)
-    env = env
-    ns, na = length(state(env)), length(action_space(env))
-
-    policy = Agent(
-        policy=QBasedPolicy(
-            learner=BasicDQNLearner(
-                approximator=NeuralNetworkApproximator(
-                    model=Chain(
-                        Dense(ns, 128, relu; init=glorot_uniform(rng)),
-                        Dense(128, 128, relu; init=glorot_uniform(rng)),
-                        Dense(128, na; init=glorot_uniform(rng)),
-                    ) |> cpu,
-                    optimizer=ADAM(),
-                ),
-                batch_size=32,
-                min_replay_history=100,
-                loss_func=huber_loss,
-                rng=rng,
-            ),
-            explorer=EpsilonGreedyExplorer(
-                kind=:exp,
-                ϵ_stable=0.01,
-                decay_steps=500,
-                rng=rng,
-            ),
-        ),
-        trajectory=CircularArraySARTTrajectory(
-            capacity=1000,
-            state=Vector{Int32} => (ns,),
-            action=Int32 => (),
-        ),
-    )
-    stop_condition = StopAfterStep(10_000, is_show_progress=!haskey(ENV, "CI"))
-    hook = TotalRewardPerEpisode()
-    Experiment(policy, env, stop_condition, hook, "# BasicDQN <-> MazeEnv")
-end
-
-ex = E`JuliaRL_BasicDQN_MazeEnv`
-run(ex)
 
 ##
 
@@ -245,71 +194,116 @@ function test()
     map = parsemap(input)
     start_pos = findfirst(==(-1), map).I
     goal_pos = findfirst(==(max(map...)), map).I
-    env = MazeEnv(; map=map, position=start_pos, goal=goal_pos)
+    # env = MazeEnv(; map=map, position=start_pos, goal=goal_pos)
 
     rng = MersenneTwister(123)
+    # ns, na = length(state(env)), length(action_space(env))
+    # n_atoms = 51
+    # agent = Agent(
+    #     policy = QBasedPolicy(
+    #         learner = RainbowLearner(
+    #             approximator = NeuralNetworkApproximator(
+    #                 model = Chain(
+    #                     # x->x/max(x...),
+    #                     Dense(ns, 128, relu; init = glorot_uniform(rng)),
+    #                     Dense(128, 128, relu; init = glorot_uniform(rng)),
+    #                     Dense(128, na * n_atoms; init = glorot_uniform(rng)),
+    #                 ) |> cpu,
+    #                 optimizer = ADAM(0.0005),
+    #             ),
+    #             target_approximator = NeuralNetworkApproximator(
+    #                 model = Chain(
+    #                     # x->x/max(x...),
+    #                     Dense(ns, 128, relu; init = glorot_uniform(rng)),
+    #                     Dense(128, 128, relu; init = glorot_uniform(rng)),
+    #                     Dense(128, na * n_atoms; init = glorot_uniform(rng)),
+    #                 ) |> cpu,
+    #                 optimizer = ADAM(0.0005),
+    #             ),
+    #             n_actions = na,
+    #             n_atoms = n_atoms,
+    #             Vₘₐₓ = 1000.0f0,
+    #             Vₘᵢₙ = -1.0f0,
+    #             update_freq = 1,
+    #             γ = 0.99f0,
+    #             update_horizon = 1,
+    #             batch_size = 32,
+    #             stack_size = nothing,
+    #             min_replay_history = 100,
+    #             loss_func = (ŷ, y) -> logitcrossentropy(ŷ, y; agg = identity),
+    #             target_update_freq = 100,
+    #             # rng = rng,
+    #         ),
+    #         explorer = EpsilonGreedyExplorer(
+    #             kind = :exp,
+    #             # ϵ_stable = 0.01,
+    #             ϵ_stable=1,
+    #             decay_steps = 50,
+    #             # rng = rng,
+    #         ),
+    #     ),
+    #     trajectory=CircularArraySARTTrajectory(;
+    #         capacity=10000,
+    #         state=Vector{Float32} => (ns,),
+    #         action=Int32 => (),
+    #         reward=Int32 => (),
+    #         terminal=Bool=>()
+    #     ),
+    # )
+    
+    N_ENV = 1
+    UPDATE_FREQ = 64
+    # env = MultiThreadEnv([
+    #     MazeEnv(; map=map, position=start_pos, goal=goal_pos) for i in 1:N_ENV
+    # ])
+    env = MazeEnv(; map=map, position=start_pos, goal=goal_pos)
+    # ns, na = length(state(env[1])), length(action_space(env[1]))
     ns, na = length(state(env)), length(action_space(env))
-    n_atoms = 51
+    # RLBase.reset!(env, is_force = true)
     agent = Agent(
-        policy = QBasedPolicy(
-            learner = RainbowLearner(
-                approximator = NeuralNetworkApproximator(
-                    model = Chain(
-                        # x->x/max(x...),
-                        Dense(ns, 128, relu; init = glorot_uniform(rng)),
-                        Dense(128, 128, relu; init = glorot_uniform(rng)),
-                        Dense(128, na * n_atoms; init = glorot_uniform(rng)),
-                    ) |> cpu,
-                    optimizer = ADAM(0.0005),
-                ),
-                target_approximator = NeuralNetworkApproximator(
-                    model = Chain(
-                        # x->x/max(x...),
-                        Dense(ns, 128, relu; init = glorot_uniform(rng)),
-                        Dense(128, 128, relu; init = glorot_uniform(rng)),
-                        Dense(128, na * n_atoms; init = glorot_uniform(rng)),
-                    ) |> cpu,
-                    optimizer = ADAM(0.0005),
-                ),
-                n_actions = na,
-                n_atoms = n_atoms,
-                Vₘₐₓ = 1000.0f0,
-                Vₘᵢₙ = -1.0f0,
-                update_freq = 1,
-                γ = 0.99f0,
-                update_horizon = 1,
-                batch_size = 32,
-                stack_size = nothing,
-                min_replay_history = 100,
-                loss_func = (ŷ, y) -> logitcrossentropy(ŷ, y; agg = identity),
-                target_update_freq = 100,
-                # rng = rng,
-            ),
-            explorer = EpsilonGreedyExplorer(
-                kind = :exp,
-                # ϵ_stable = 0.01,
-                ϵ_stable=1,
-                decay_steps = 50,
-                # rng = rng,
-            ),
+        policy = PPOPolicy(
+            approximator = ActorCritic(
+                actor = Chain(
+                    Dense(ns, 256, relu; init = glorot_uniform(rng)),
+                    Dense(256, 256, relu; init = glorot_uniform(rng)),
+                    Dense(256, na; init = glorot_uniform(rng)),
+                )|>cpu,
+                critic = Chain(
+                    Dense(ns, 256, relu; init = glorot_uniform(rng)),
+                    Dense(256, 256, relu; init = glorot_uniform(rng)),
+                    Dense(256, 1; init = glorot_uniform(rng)),
+                )|>cpu,
+                optimizer = ADAM(1e-3),
+            ),# |> cpu,
+            γ = 0.99f0,
+            λ = 0.95f0,
+            clip_range = 0.1f0,
+            max_grad_norm = 0.5f0,
+            n_epochs = 4,
+            n_microbatches = 4,
+            actor_loss_weight = 1.0f0,
+            critic_loss_weight = 0.5f0,
+            entropy_loss_weight = 0.001f0,
+            update_freq = UPDATE_FREQ,
         ),
-        trajectory=CircularArraySARTTrajectory(;
-            capacity=10000,
-            state=Vector{Float32} => (ns,),
-            action=Int32 => (),
-            reward=Int32 => (),
-            terminal=Bool=>()
+        trajectory = PPOTrajectory(;
+            capacity = UPDATE_FREQ,
+            state = Matrix{Float32} => (ns, N_ENV),
+            action = Vector{Int} => (N_ENV,),
+            action_log_prob = Vector{Float32} => (N_ENV,),
+            reward = Vector{Int} => (N_ENV,),
+            terminal = Vector{Bool} => (N_ENV,),
         ),
     )
-    stop_condition = StopAfterNoImprovement(() -> hook.reward, 5)
+
     stop_condition = StopAfterStep(100_000, is_show_progress=!haskey(ENV, "CI"))
-    hook = TotalRewardPerEpisode()
-    Experiment(agent, env, stop_condition, hook, "# Rainbow")
+    hook = TotalBatchRewardPerEpisode(N_ENV)
+    Experiment(agent, env, stop_condition, hook, "# PPO with CartPole")
 end
 ex = test()
 
 ##
 
-function part1()
+# function part1()
 
-end
+# end
