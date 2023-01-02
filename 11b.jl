@@ -1,18 +1,19 @@
+##
 using Test
 using Logging
 
-
+module Types
 mutable struct Monkey
     # items::Vector{BigFloat}
-    items::Vector{Item}
+    items::Vector{Int64}
     operation::Vector{String}
     divisiblecondition::Int64
     truemonkey::Int64
     falsemonkey::Int64
     inspectcount::Int64
 end
-
-##
+end
+Monkey = Types.Monkey
 
 Base.global_logger(ConsoleLogger(Warn))
 
@@ -24,7 +25,7 @@ function operate(monkey, item)
     end
 end
 
-function runround(monkeys)
+function runround(monkeys, divisor)
     for (i, monkey) in enumerate(monkeys)
         @info "Monkey $(i-1):"
 
@@ -36,6 +37,7 @@ function runround(monkeys)
             @info "    Worry level increases by $item to $worrylevel"
             # worrylevel = worrylevel ÷ 3
             # @info "    Monkey gets bored: worry level divided by 3 to $worrylevel"
+            worrylevel %= divisor
 
             # worrylevel %= monkey.divisiblecondition
             # if isinteger(worrylevel/monkey.divisiblecondition)
@@ -116,17 +118,18 @@ Monkey 3:
     # input = split(input, "\n")
 
     monkeys = f(input)
-    for _ in 1:20
-        runround(monkeys)
+    divisor = *(map(x->x.divisiblecondition, monkeys)...)
+    for _ in 1:10000
+        runround(monkeys, divisor)
     end
     @show getproperty.(monkeys, :inspectcount)
-    *(sort(getproperty.(monkeys, :inspectcount))[end-1:end]...)
+    @show *(sort(getproperty.(monkeys, :inspectcount))[end-1:end]...)
     # for i in input
     #     @show f(i)
     # end
 end
 
-test()
+#test()
 
 ##
 
@@ -134,12 +137,13 @@ function part1()
     input = read("data/11.txt", String)
     # input = split(input, "\n")
     monkeys = f(input)
-    for _ in 1:20
-        runround(monkeys)
+    divisor = *(map(x->x.divisiblecondition, monkeys)...)
+    for _ in 1:10000
+        runround(monkeys, divisor)
     end
     @show getproperty.(monkeys, :inspectcount)
-    *(sort(getproperty.(monkeys, :inspectcount))[end-1:end]...)
+    @show *(sort(getproperty.(monkeys, :inspectcount))[end-1:end]...)
 end
 
 part1()
-
+##
